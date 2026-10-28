@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청담음료 — 조건 필터로 좁히기 (프로토타입)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Malgun Gothic", sans-serif; background: #f7f5f0; color: #222; padding: 20px 16px 48px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #777; font-size: 13px; margin-bottom: 20px; }
+  .panel { background: #fff; border: 1px solid #e4e0d8; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .cond { margin-bottom: 14px; }
+  .cond:last-child { margin-bottom: 0; }
+  .cond-label { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .cond-label span { font-weight: 400; color: #888; font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid #cfc9bd; background: #fff; border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
+  .chip.on { background: #2f5d3a; border-color: #2f5d3a; color: #fff; font-weight: 700; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; }
+  .toggle { position: relative; width: 46px; height: 26px; border-radius: 999px; background: #d8d3c8; border: none; cursor: pointer; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .toggle.on { background: #2f5d3a; }
+  .toggle.on::after { left: 23px; }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 12px; }
+  .count { font-size: 14px; font-weight: 700; }
+  .reset { border: none; background: none; color: #2f5d3a; font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .card { background: #fff; border: 1px solid #e4e0d8; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .card .name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .vals { display: flex; gap: 14px; font-size: 13px; color: #555; flex-wrap: wrap; }
+  .vals b { color: #222; }
+  .unknown { color: #b0a894; }
+  .notice { background: #fbf8f1; border: 1px dashed #cfc39f; border-radius: 12px; padding: 12px 16px; font-size: 13px; margin-top: 4px; }
+  .notice button { border: none; background: none; color: #2f5d3a; font-weight: 700; cursor: pointer; font-size: 13px; }
+  .notice ul { margin: 8px 0 0 18px; color: #555; }
+  .empty { background: #fff; border: 1px solid #e4e0d8; border-radius: 12px; padding: 20px 16px; text-align: center; }
+  .empty .t { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .empty .d { font-size: 13px; color: #777; margin-bottom: 14px; }
+  .relax { display: block; width: 100%; text-align: left; border: 1px solid #cfc9bd; background: #f7f5f0; border-radius: 10px; padding: 10px 14px; font-size: 13px; cursor: pointer; margin-bottom: 8px; }
+  .relax b { color: #2f5d3a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>내 기준으로 찾기</h1>
+  <p class="sub">청담음료 프로토타입 — 조건 필터로 좁히기 · 샘플 데이터는 가상 제품입니다</p>
+
+  <div class="panel">
+    <div class="cond">
+      <div class="cond-label">당류 <span>100ml 기준, 이하</span></div>
+      <div class="chips" id="sugarChips"></div>
+    </div>
+    <div class="cond">
+      <div class="cond-label">단백질 <span>1회 제공량 기준, 이상</span></div>
+      <div class="chips" id="proteinChips"></div>
+    </div>
+    <div class="cond">
+      <div class="cond-label">카페인</div>
+      <div class="toggle-row">
+        <button class="toggle" id="caffeineToggle" aria-label="카페인 없음"></button>
+        <span style="font-size:13px;">카페인 없음만 보기</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="count" id="count"></div>
+    <button class="reset" id="resetBtn">조건 초기화</button>
+  </div>
+
+  <div id="results"></div>
+  <div id="notice"></div>
+</div>
+
+<script>
+const PRODUCTS = [
+  { name: "청담 제로 스파클링",   sugar: 0,    protein: 0,  caffeine: 0 },
+  { name: "프로틴 밀크 오리지널", sugar: 4.2,  protein: 20, caffeine: 0 },
+  { name: "프로틴 밀크 라이트",   sugar: 3.0,  protein: 15, caffeine: 0 },
+  { name: "데일리 콤부차 베리",   sugar: 2.5,  protein: 0,  caffeine: 8 },
+  { name: "콜드브루 블랙",        sugar: 0,    protein: 0,  caffeine: 150 },
+  { name: "말차 라떼",            sugar: 7.5,  protein: 4,  caffeine: 45 },
+  { name: "곡물 프로틴 쉐이크",   sugar: 5.0,  protein: 17, caffeine: 0 },
+  { name: "저당 두유",            sugar: 1.8,  protein: 8,  caffeine: 0 },
+  { name: "비타민 워터 플러스",   sugar: 9.0,  protein: 0,  caffeine: 0 },
+  { name: "고단백 요거트 드링크", sugar: 6.4,  protein: 12, caffeine: 0 },
+  { name: "허브 블렌드 티",       sugar: null, protein: 0,  caffeine: 0 },
+  { name: "에너지 부스트 샷",     sugar: 11.0, protein: 2,  caffeine: 100 }
+];
+
+const SUGAR_OPTIONS = [null, 0, 5, 10];
+const PROTEIN_OPTIONS = [null, 10, 15, 20];
+
+const state = { sugarMax: null, proteinMin: null, caffeineFree: false };
+let noticeOpen = false;
+
+// 한 제품이 현재 조건에서 어떤 상태인지 판정한다.
+// 반환: "pass" | "fail" | "null" (정보가 없어서 제외됨 — 단, 아는 값으로는 전부 통과한 경우만)
+function classify(p, s) {
+  let hasNull = false;
+  if (s.sugarMax !== null) {
+    if (p.sugar === null) hasNull = true;
+    else if (p.sugar > s.sugarMax) return "fail";
+  }
+  if (s.proteinMin !== null) {
+    if (p.protein === null) hasNull = true;
+    else if (p.protein < s.proteinMin) return "fail";
+  }
+  if (s.caffeineFree) {
+    if (p.caffeine === null) hasNull = true;
+    else if (p.caffeine !== 0) return "fail";
+  }
+  return hasNull ? "null" : "pass";
+}
+
+function applyFilter(s) {
+  const pass = [], nulled = [];
+  for (const p of PRODUCTS) {
+    const r = classify(p, s);
+    if (r === "pass") pass.push(p);
+    else if (r === "null") nulled.push(p);
+  }
+  pass.sort((a, b) => {
+    if (a.sugar === null && b.sugar === null) return 0;
+    if (a.sugar === null) return 1;
+    if (b.sugar === null) return -1;
+    return a.sugar - b.sugar;
+  });
+  return { pass, nulled };
+}
+
+function fmt(v, unit) {
+  return v === null ? '<span class="unknown">정보 없음</span>' : "<b>" + v + "</b>" + unit;
+}
+
+function renderChips(elId, options, current, labelFn, onPick) {
+  const el = document.getElementById(elId);
+  el.innerHTML = "";
+  for (const opt of options) {
+    const b = document.createElement("button");
+    b.className = "chip" + (opt === current ? " on" : "");
+    b.textContent = labelFn(opt);
+    b.onclick = () => { onPick(opt); render(); };
+    el.appendChild(b);
+  }
+}
+
+function render() {
+  renderChips("sugarChips", SUGAR_OPTIONS, state.sugarMax,
+    v => v === null ? "제한 없음" : v + "g 이하",
+    v => state.sugarMax = v);
+  renderChips("proteinChips", PROTEIN_OPTIONS, state.proteinMin,
+    v => v === null ? "제한 없음" : v + "g 이상",
+    v => state.proteinMin = v);
+  document.getElementById("caffeineToggle").className =
+    "toggle" + (state.caffeineFree ? " on" : "");
+
+  const { pass, nulled } = applyFilter(state);
+  const anyCondition = state.sugarMax !== null || state.proteinMin !== null || state.caffeineFree;
+  document.getElementById("count").textContent = "결과 " + pass.length + "개";
+
+  const box = document.getElementById("results");
+  box.innerHTML = "";
+  if (pass.length === 0 && anyCondition) {
+    const d = document.createElement("div");
+    d.className = "empty";
+    let html = '<div class="t">조건에 맞는 제품이 없어요</div>' +
+               '<div class="d">조건 하나만 풀어도 아래처럼 나와요</div>';
+    const relax = [];
+    if (state.sugarMax !== null) relax.push(["당류", { ...state, sugarMax: null }, "당류 조건 풀기"]);
+    if (state.proteinMin !== null) relax.push(["단백질", { ...state, proteinMin: null }, "단백질 조건 풀기"]);
+    if (state.caffeineFree) relax.push(["카페인", { ...state, caffeineFree: false }, "카페인 조건 풀기"]);
+    d.innerHTML = html;
+    for (const [label, altState, btnText] of relax) {
+      const n = applyFilter(altState).pass.length;
+      const b = document.createElement("button");
+      b.className = "relax";
+      b.innerHTML = btnText + " → <b>" + n + "개</b>";
+      b.onclick = () => { Object.assign(state, altState); render(); };
+      d.appendChild(b);
+    }
+    box.appendChild(d);
+  } else {
+    for (const p of pass) {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = '<div class="name">' + p.name + "</div>" +
+        '<div class="vals">' +
+        "<span>당류 " + fmt(p.sugar, "g") + "</span>" +
+        "<span>단백질 " + fmt(p.protein, "g") + "</span>" +
+        "<span>카페인 " + fmt(p.caffeine, "mg") + "</span>" +
+        "</div>";
+      box.appendChild(c);
+    }
+  }
+
+  const nt = document.getElementById("notice");
+  nt.innerHTML = "";
+  if (anyCondition && nulled.length > 0) {
+    const d = document.createElement("div");
+    d.className = "notice";
+    d.innerHTML = "정보가 없어 제외된 제품 <b>" + nulled.length + "개</b> " +
+      '<button id="noticeToggle">' + (noticeOpen ? "접기" : "펼쳐보기") + "</button>" +
+      (noticeOpen ? "<ul>" + nulled.map(p => "<li>" + p.name + "</li>").join("") + "</ul>" : "");
+    nt.appendChild(d);
+    document.getElementById("noticeToggle").onclick = () => { noticeOpen = !noticeOpen; render(); };
+  }
+}
+
+document.getElementById("caffeineToggle").onclick = () => { state.caffeineFree = !state.caffeineFree; render(); };
+document.getElementById("resetBtn").onclick = () => {
+  state.sugarMax = null; state.proteinMin = null; state.caffeineFree = false; noticeOpen = false; render();
+};
+render();
+</script>
+</body>
+</html>
