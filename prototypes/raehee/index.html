@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>성분 비교 — 청담음료 프로토타입</title>
+<style>
+  :root {
+    --bg: #f6f8f7;
+    --card: #ffffff;
+    --ink: #17302b;
+    --muted: #5d716c;
+    --line: #dbe5e1;
+    --brand: #1f7a68;
+    --brand-dark: #165a4c;
+    --brand-soft: #e3f3ee;
+    --warn: #8a4b00;
+    --warn-bg: #fff3dc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    line-height: 1.5; padding-bottom: 96px;
+  }
+  header { padding: 28px 20px 8px; max-width: 960px; margin: 0 auto; }
+  header h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); }
+  main { max-width: 960px; margin: 0 auto; padding: 8px 20px 24px; }
+  .notice {
+    background: var(--warn-bg); color: var(--warn); border-radius: 10px;
+    padding: 10px 14px; font-size: 14px; margin: 12px 0 18px;
+  }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .card {
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card.picked { border-color: var(--brand); background: #fbfffd; }
+  .card h3 { margin: 0; font-size: 17px; }
+  .serving { color: var(--muted); font-size: 13px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; margin: 0; }
+  .stats div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--line); padding-bottom: 2px; }
+  .stats dt { color: var(--muted); }
+  .stats dd { margin: 0; font-weight: 600; }
+  .na { color: #98a8a3; font-weight: 500; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 10px; border: 1.5px solid var(--brand);
+    background: #fff; color: var(--brand-dark); padding: 9px 14px; font-weight: 600;
+  }
+  button:hover { background: var(--brand-soft); }
+  button.primary { background: var(--brand); color: #fff; }
+  button.primary:hover { background: var(--brand-dark); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; background: #fff; color: var(--muted); border-color: var(--line); }
+  button.primary:disabled { background: #b9cdc7; color: #fff; border-color: #b9cdc7; }
+  button.ghost { border-color: var(--line); color: var(--muted); font-weight: 500; }
+  button:focus-visible { outline: 3px solid #7cc5b2; outline-offset: 2px; }
+
+  /* 하단 바 */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1.5px solid var(--line);
+    padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
+  }
+  .bar[hidden] { display: none; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 auto; max-width: 560px; }
+  .chip { background: var(--brand-soft); color: var(--brand-dark); border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 14px; display: inline-flex; gap: 4px; align-items: center; }
+  .chip button { border: 0; background: transparent; padding: 0 6px; font-size: 16px; line-height: 1; border-radius: 999px; }
+
+  /* 토스트 */
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 90px; background: #17302b; color: #fff;
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+
+  /* 비교표 */
+  .back { margin: 6px 0 14px; }
+  .table-wrap { overflow-x: auto; background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { background: #f0f6f4; font-size: 16px; }
+  thead th .rm { margin-left: 6px; border: 0; background: transparent; color: var(--muted); padding: 0 6px; font-size: 16px; }
+  tbody th { width: 150px; font-weight: 600; background: #fafcfb; }
+  tbody th small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  td .val { font-size: 18px; font-weight: 700; }
+  td.hl { background: var(--brand-soft); }
+  .badge { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--brand); color: #fff; vertical-align: middle; }
+  .badge.same { background: #6c7f7a; }
+  tr.summary td { font-size: 14px; color: var(--brand-dark); background: #f7fbf9; padding-top: 8px; padding-bottom: 8px; }
+  tr.info td { color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>성분 비교</h1>
+  <p>마음에 둔 음료 2~3개를 나란히 놓고, 무엇이 얼마나 다른지 한눈에 확인하세요.</p>
+</header>
+
+<main>
+  <div class="notice" role="note">가상 샘플 데이터입니다. 실제 제품의 성분값이 아닙니다.</div>
+
+  <section id="listView" aria-label="제품 목록">
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="compareView" aria-label="비교 결과" hidden>
+    <div class="back"><button class="ghost" id="backBtn" type="button">← 목록으로</button></div>
+    <div class="table-wrap"><table id="table"></table></div>
+  </section>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <div class="chips" id="chips" aria-label="담은 제품"></div>
+  <button class="ghost" id="clearBtn" type="button">전부 비우기</button>
+  <button class="primary" id="compareBtn" type="button">비교하기 (0)</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="data.js"></script>
+<script src="compare.js"></script>
+<script>
+(function () {
+  var C = window.Compare, PRODUCTS = window.PRODUCTS;
+  var state = { selected: [], view: "list" };
+  var toastTimer;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function byId(id) { return PRODUCTS.filter(function (p) { return p.id === id; })[0]; }
+  function selectedProducts() { return state.selected.map(byId); }
+  function fmt(v, unit) { return v === null ? '<span class="na">정보 없음</span>' : esc(v + unit); }
+
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  function renderList() {
+    $("grid").innerHTML = PRODUCTS.map(function (p) {
+      var picked = state.selected.indexOf(p.id) !== -1;
+      return '<article class="card' + (picked ? " picked" : "") + '">' +
+        "<h3>" + esc(p.name) + "</h3>" +
+        '<div class="serving">1회 제공량 ' + esc(p.servingMl) + "ml</div>" +
+        '<dl class="stats">' +
+          "<div><dt>칼로리</dt><dd>" + fmt(p.kcal, "kcal") + "</dd></div>" +
+          "<div><dt>당류</dt><dd>" + fmt(p.sugar, "g") + "</dd></div>" +
+          "<div><dt>단백질</dt><dd>" + fmt(p.protein, "g") + "</dd></div>" +
+          "<div><dt>카페인</dt><dd>" + fmt(p.caffeine, "mg") + "</dd></div>" +
+        "</dl>" +
+        '<button type="button" data-id="' + p.id + '" aria-pressed="' + picked + '">' +
+          (picked ? "담기 취소" : "비교에 담기") + "</button>" +
+        "</article>";
+    }).join("");
+  }
+
+  function renderBar() {
+    var n = state.selected.length;
+    $("bar").hidden = n === 0;
+    $("chips").innerHTML = selectedProducts().map(function (p) {
+      return '<span class="chip">' + esc(p.name) +
+        '<button type="button" data-rm="' + p.id + '" aria-label="' + esc(p.name) + ' 빼기">×</button></span>';
+    }).join("");
+    $("compareBtn").textContent = "비교하기 (" + n + ")";
+    $("compareBtn").disabled = n < 2;
+    $("compareBtn").title = n < 2 ? "제품을 2개 이상 담아 주세요" : "";
+  }
+
+  function renderCompare() {
+    var prods = selectedProducts();
+    var results = C.compareProducts(prods);
+    var html = "<thead><tr><th></th>" + prods.map(function (p) {
+      return "<th>" + esc(p.name) + '<button class="rm" type="button" data-rm="' + p.id + '" aria-label="' + esc(p.name) + ' 빼기">×</button></th>';
+    }).join("") + "</tr></thead><tbody>";
+
+    html += '<tr class="info"><th scope="row">1회 제공량</th>' + prods.map(function (p) {
+      return "<td>" + esc(p.servingMl) + "ml</td>";
+    }).join("") + "</tr>";
+
+    results.forEach(function (r) {
+      html += '<tr><th scope="row">' + esc(r.row.label) + "<small>" + esc(r.row.basis) + "</small></th>" +
+        r.cells.map(function (c) {
+          var badge = c.mark === "lowest" ? '<span class="badge">가장 낮음</span>'
+                    : c.mark === "highest" ? '<span class="badge">가장 높음</span>'
+                    : c.mark === "same" ? '<span class="badge same">동일</span>' : "";
+          var hl = c.mark === "lowest" || c.mark === "highest" ? ' class="hl"' : "";
+          return "<td" + hl + '><span class="val">' + fmt(c.value, r.row.unit) + "</span>" + badge + "</td>";
+        }).join("") + "</tr>";
+      if (r.summary) {
+        html += '<tr class="summary"><td colspan="' + (prods.length + 1) + '">' + esc(r.summary) + "</td></tr>";
+      }
+    });
+    $("table").innerHTML = html + "</tbody>";
+  }
+
+  function render() {
+    // 비교 화면에서 1개 이하로 줄면 목록으로 돌아간다
+    if (state.view === "compare" && state.selected.length < 2) state.view = "list";
+    $("listView").hidden = state.view !== "list";
+    $("compareView").hidden = state.view !== "compare";
+    renderList(); renderBar();
+    if (state.view === "compare") renderCompare();
+  }
+
+  function toggle(id) {
+    if (state.selected.indexOf(id) !== -1) { state.selected = C.removeFromCompare(state.selected, id); return; }
+    var r = C.addToCompare(state.selected, id);
+    if (!r.ok) { toast(r.reason); return; }
+    state.selected = r.selected;
+  }
+
+  $("grid").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-id]"); if (!b) return;
+    toggle(Number(b.getAttribute("data-id"))); render();
+  });
+  document.addEventListener("click", function (e) {
+    var rm = e.target.closest("button[data-rm]"); if (!rm) return;
+    state.selected = C.removeFromCompare(state.selected, Number(rm.getAttribute("data-rm"))); render();
+  });
+  $("compareBtn").addEventListener("click", function () {
+    if (state.selected.length < 2) return;
+    state.view = "compare"; render(); window.scrollTo(0, 0);
+  });
+  $("backBtn").addEventListener("click", function () { state.view = "list"; render(); });
+  $("clearBtn").addEventListener("click", function () { state.selected = []; state.view = "list"; render(); });
+
+  render();
+})();
+</script>
+</body>
+</html>
