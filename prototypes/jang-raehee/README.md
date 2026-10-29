@@ -1,6 +1,6 @@
 # 성분 비교 프로토타입 (장래희)
 
-스펙: `docs/specs/raehee-compare.md`
+스펙: `docs/specs/jang-raehee-compare.md`
 
 ## 실행
 - `index.html`을 브라우저에서 더블클릭하면 열립니다. 설치할 것이 없습니다.

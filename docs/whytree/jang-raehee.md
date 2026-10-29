@@ -1,6 +1,6 @@
-# WhyTree — 장래희 (raehee)
+# WhyTree — 장래희 (jang-raehee)
 
-- 이름: 장래희 (raehee)
+- 이름: 장래희 (jang-raehee)
 - 날짜: 2026-10-29
 
 ```
