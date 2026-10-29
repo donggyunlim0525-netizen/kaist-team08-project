@@ -1,0 +1,13 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>득근음료 — 목표별 추천</title>
+<style>body{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;margin:0;color:#1A1718;background:#fff}main{max-width:640px;margin:0 auto;padding:24px 16px}h1{font-size:24px;margin:0 0 4px}p.s{color:#6B6B6B;margin:0 0 20px;font-size:14px}.goals{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.goals button{border:1px solid #1A1718;background:#fff;padding:10px 16px;font-size:15px;cursor:pointer}.goals button.on{background:#1A1718;color:#fff}.card{border:1px solid #E5E5E5;padding:14px;margin-bottom:10px;display:grid;grid-template-columns:36px 1fr;gap:10px}.rank{font-size:22px;font-weight:800;color:#C02026}.name{font-weight:700}.meta{font-size:13px;color:#6B6B6B}.why{font-size:13px;margin-top:4px;background:#FBEAEA;padding:4px 8px;display:inline-block}.note{font-size:12px;color:#6B6B6B;margin-top:20px}</style></head>
+<body><main><h1>득근음료</h1><p class="s">운동 목표를 고르면, 목표에 맞는 순서로 음료를 보여줍니다.</p>
+<div class="goals"><button data-g="bulk">벌크업</button><button data-g="diet">다이어트</button><button data-g="recovery">운동 후 회복</button></div>
+<div id="list"><p class="s">목표를 하나 골라주세요.</p></div>
+<p class="note">※ 샘플 데이터(예시 값)입니다. 실제 제품 성분이 아닙니다.</p></main>
+<script>
+const D=[{n:"샘플 A 프로틴 드링크",p:20,s:0,k:110,price:2500},{n:"샘플 B 고단백 우유",p:24,s:9,k:180,price:2200},{n:"샘플 C 제로 프로틴",p:15,s:1,k:80,price:2000},{n:"샘플 D 초코 단백질",p:30,s:12,k:250,price:3300},{n:"샘플 E 아이솔레이트 워터",p:25,s:0,k:100,price:3500},{n:"샘플 F 식물성 프로틴",p:12,s:3,k:90,price:1800},{n:"샘플 G 커피 프로틴",p:18,s:2,k:120,price:2400},{n:"샘플 H 벌크 쉐이크",p:35,s:20,k:400,price:4000},{n:"샘플 I 라이트 프로틴",p:10,s:0,k:50,price:1500},{n:"샘플 J 바나나 단백질",p:22,s:6,k:160,price:2600}];
+const per=x=>Math.round(x.price/x.p);
+const R={bulk:{f:()=>true,s:(a,b)=>b.p-a.p,w:x=>`단백질 ${x.p}g`},diet:{f:x=>x.s<=5,s:(a,b)=>b.p/b.k-a.p/a.k,w:x=>`칼로리 100kcal당 단백질 ${(x.p/x.k*100).toFixed(1)}g`},recovery:{f:()=>true,s:(a,b)=>per(a)-per(b),w:x=>`단백질 1g당 ${per(x)}원`}};
+function show(g){document.querySelectorAll('.goals button').forEach(b=>b.classList.toggle('on',b.dataset.g===g));const r=R[g];const L=D.filter(r.f).sort(r.s);document.getElementById('list').innerHTML=L.map((x,i)=>`<div class="card"><div class="rank">${i+1}</div><div><div class="name">${x.n}</div><div class="meta">단백질 ${x.p}g · 당류 ${x.s}g · ${x.k}kcal · ${x.price.toLocaleString()}원 · 1g당 ${per(x)}원</div><div class="why">${r.w(x)}</div></div></div>`).join('')}
+document.querySelectorAll('.goals button').forEach(b=>b.onclick=()=>show(b.dataset.g));
+</script></body></html>
