@@ -141,12 +141,11 @@
       var picked = state.selected.indexOf(p.id) !== -1;
       return '<article class="card' + (picked ? " picked" : "") + '">' +
         "<h3>" + esc(p.name) + "</h3>" +
-        '<div class="serving">1회 제공량 ' + esc(p.servingMl) + "ml</div>" +
+        '<div class="serving">1회 제공량 ' + esc(p.servingMl) + "ml 기준</div>" +
         '<dl class="stats">' +
-          "<div><dt>칼로리</dt><dd>" + fmt(p.kcal, "kcal") + "</dd></div>" +
-          "<div><dt>당류</dt><dd>" + fmt(p.sugar, "g") + "</dd></div>" +
-          "<div><dt>단백질</dt><dd>" + fmt(p.protein, "g") + "</dd></div>" +
-          "<div><dt>카페인</dt><dd>" + fmt(p.caffeine, "mg") + "</dd></div>" +
+          C.ROWS.map(function (row) {
+            return "<div><dt>" + esc(row.label) + "</dt><dd>" + fmt(C.valueOf(p, row), row.unit) + "</dd></div>";
+          }).join("") +
         "</dl>" +
         '<button type="button" data-id="' + p.id + '" aria-pressed="' + picked + '">' +
           (picked ? "담기 취소" : "비교에 담기") + "</button>" +
@@ -173,12 +172,12 @@
       return "<th>" + esc(p.name) + '<button class="rm" type="button" data-rm="' + p.id + '" aria-label="' + esc(p.name) + ' 빼기">×</button></th>';
     }).join("") + "</tr></thead><tbody>";
 
-    html += '<tr class="info"><th scope="row">1회 제공량</th>' + prods.map(function (p) {
+    html += '<tr class="info"><th scope="row">1회 제공량<small>아래 수치는 모두 이 양 기준</small></th>' + prods.map(function (p) {
       return "<td>" + esc(p.servingMl) + "ml</td>";
     }).join("") + "</tr>";
 
     results.forEach(function (r) {
-      html += '<tr><th scope="row">' + esc(r.row.label) + "<small>" + esc(r.row.basis) + "</small></th>" +
+      html += '<tr><th scope="row">' + esc(r.row.label) + "</th>" +
         r.cells.map(function (c) {
           var badge = c.mark === "lowest" ? '<span class="badge">가장 낮음</span>'
                     : c.mark === "highest" ? '<span class="badge">가장 높음</span>'

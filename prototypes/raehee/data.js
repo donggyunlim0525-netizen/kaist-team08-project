@@ -1,5 +1,6 @@
 // 가상 샘플 제품 12개. 실제 제품의 성분값이 아닙니다.
-// kcal, sugar: 100ml 기준 / protein, caffeine: 1회 제공량 기준 / servingMl: 1회 제공량(ml)
+// 입력 단위: kcal, sugar는 100ml 값 / protein, caffeine은 1회 제공량 값 / servingMl은 1회 제공량(ml)
+// 화면에는 모두 1회 제공량 기준으로 환산해서 보여 준다 (compare.js의 valueOf).
 // null = 정보 없음
 window.PRODUCTS = [
   { id: 1,  name: "라임 제로 스파클링", servingMl: 330, kcal: 0,    sugar: 0,    protein: 0,    caffeine: 0 },
