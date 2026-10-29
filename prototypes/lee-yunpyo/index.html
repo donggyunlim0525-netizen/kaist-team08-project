@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>청담음료 · 성분 거르기</title>
+<style>
+  :root {
+    --ink: #17302b; --ink-2: #4b5f5a; --muted: #7d8c88;
+    --line: #e3e8e6; --bg: #ffffff; --soft: #f3f6f5;
+    --accent: #1f6b57; --accent-soft: #e4f1ec;
+    --warn: #a4462f; --warn-soft: #fbece7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 20px 0 8px; }
+  .brand { font-size: 13px; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+  h1 { font-size: 22px; line-height: 1.35; margin: 6px 0 4px; }
+  .demo { display: inline-block; font-size: 12px; color: var(--warn); background: var(--warn-soft);
+    border-radius: 999px; padding: 3px 10px; margin-top: 6px; }
+  .sticky { position: sticky; top: 0; background: var(--bg); padding: 12px 0 10px; z-index: 2;
+    border-bottom: 1px solid var(--line); }
+  .label { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 999px; padding: 10px 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+    min-height: 44px; font-family: inherit; }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .chip[aria-pressed="true"]::before { content: "✕ "; font-weight: 400; }
+  input[type=search] { width: 100%; margin-top: 10px; padding: 11px 14px; font-size: 15px;
+    border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; background: var(--soft); }
+  .summary { display: flex; justify-content: space-between; align-items: center;
+    margin: 14px 0 6px; font-size: 14px; color: var(--ink-2); }
+  .summary b { color: var(--ink); font-size: 16px; }
+  .why { border: none; background: var(--warn-soft); color: var(--warn); font-weight: 700;
+    border-radius: 10px; padding: 8px 12px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .why[hidden] { display: none; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  .card { padding: 14px 2px; border-bottom: 1px solid var(--line); }
+  .name { font-weight: 700; font-size: 16px; }
+  .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .raw { font-size: 13px; color: var(--ink-2); margin-top: 6px; line-height: 1.5; }
+  .ok { display: inline-block; font-size: 12px; color: var(--accent); background: var(--accent-soft);
+    padding: 2px 8px; border-radius: 6px; margin-top: 6px; }
+  details.panel { margin: 10px 0; border-radius: 14px; background: var(--soft); padding: 4px 14px; }
+  details.panel > summary { cursor: pointer; padding: 10px 0; font-weight: 700; font-size: 14px; list-style: none; }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary::after { content: " ▾"; color: var(--muted); }
+  details.panel.excl { background: var(--warn-soft); scroll-margin-top: 230px; }
+  .reason { font-size: 13px; margin-top: 4px; }
+  .reason mark { background: #fff; color: var(--warn); font-weight: 700; padding: 0 4px; border-radius: 4px; }
+  .empty { padding: 24px 0; color: var(--muted); text-align: center; }
+  footer { margin-top: 28px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">청담음료</div>
+    <h1>피하고 싶은 성분을 고르면<br>든 음료를 빼 드려요</h1>
+    <span class="demo" id="dataBadge">데모 데이터 · 가상 제품</span>
+  </header>
+
+  <div class="sticky">
+    <div class="label">피하고 싶은 성분</div>
+    <div class="chips" id="chips"></div>
+    <input type="search" id="q" placeholder="제품명 검색" aria-label="제품명 검색">
+  </div>
+
+  <div class="summary">
+    <span><b id="keptCount">0</b>개 남음</span>
+    <button class="why" id="whyBtn" hidden></button>
+  </div>
+
+  <details class="panel excl" id="exclPanel" hidden>
+    <summary id="exclSummary"></summary>
+    <ul id="exclList"></ul>
+  </details>
+
+  <ul id="list"></ul>
+
+  <details class="panel" id="noInfoPanel" hidden>
+    <summary id="noInfoSummary"></summary>
+    <ul id="noInfoList"></ul>
+  </details>
+
+  <footer>
+    원재료 표시를 기준으로 한 자동 분류입니다. 최종 확인은 제품 포장의 원재료 표시를 보세요.<br>
+    원재료 정보가 없는 제품은 걸러진 것으로 보지 않고 따로 보여드립니다.
+  </footer>
+</div>
+
+<script src="data/dictionary.js"></script>
+<script src="data/demo-products.js"></script>
+<script src="data/products.js" onerror="void 0"></script>
+<script src="filter.js"></script>
+<script>
+  const products = window.PRODUCTS && window.PRODUCTS.length ? window.PRODUCTS : window.DEMO_PRODUCTS;
+  if (window.PRODUCTS && window.PRODUCTS.length) {
+    document.getElementById("dataBadge").textContent = "식품안전나라 C002 스냅샷 · " + products.length + "개";
+  }
+  const selected = new Set();
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  for (const g of window.DICTIONARY) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = g.label;
+    b.setAttribute("aria-pressed", "false");
+    b.onclick = () => {
+      selected.has(g.id) ? selected.delete(g.id) : selected.add(g.id);
+      b.setAttribute("aria-pressed", selected.has(g.id));
+      render();
+    };
+    $("chips").appendChild(b);
+  }
+  $("q").addEventListener("input", render);
+  $("whyBtn").onclick = () => { $("exclPanel").open = true; $("exclPanel").scrollIntoView({ behavior: "smooth", block: "start" }); };
+
+  function card(p, extra = "") {
+    return `<li class="card"><div class="name">${esc(p.name)}</div>
+      <div class="meta">${esc(p.maker)} · ${esc(p.type)}</div>${extra}</li>`;
+  }
+
+  function render() {
+    const q = $("q").value.trim().replace(/\s+/g, "");
+    const byName = p => !q || p.name.replace(/\s+/g, "").includes(q);
+    const r = Filter.classify(products.filter(byName), window.DICTIONARY, [...selected]);
+
+    $("keptCount").textContent = r.kept.length;
+    $("list").innerHTML = r.kept.length
+      ? r.kept.map(p => card(p, `<div class="raw">${esc(p.raw)}</div>` +
+          (selected.size ? `<span class="ok">고른 성분 없음</span>` : ""))).join("")
+      : `<li class="empty">조건에 맞는 음료가 없어요</li>`;
+
+    const n = r.excluded.length;
+    $("whyBtn").hidden = n === 0;
+    $("whyBtn").textContent = `${n}개 제외됨 · 이유 보기`;
+    $("exclPanel").hidden = n === 0;
+    $("exclSummary").textContent = `제외된 ${n}개와 걸린 원재료`;
+    $("exclList").innerHTML = r.excluded.map(e => card(e.product,
+      e.reasons.map(x => `<div class="reason">${esc(x.group)} ← ${x.words.map(w => `<mark>${esc(w)}</mark>`).join(" ")}</div>`).join(""))).join("");
+
+    $("noInfoPanel").hidden = r.noInfo.length === 0;
+    $("noInfoSummary").textContent = `원재료 정보 없음 ${r.noInfo.length}개 (판정하지 않음)`;
+    $("noInfoList").innerHTML = r.noInfo.map(p => card(p)).join("");
+  }
+  render();
+</script>
+</body>
+</html>
